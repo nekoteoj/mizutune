@@ -3,3 +3,6 @@ result
 result-*
 .direnv/
 .envrc
+
+# AI Agent
+.agents/skills
