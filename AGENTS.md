@@ -6,7 +6,7 @@ Read `plan/PLAN.md` before writing code. Cards: `plan/plan/` → `plan/on-going/
 
 ## Status
 
-Greenfield. Toolchain only (`flake.nix`: Node 26, Yarn classic, Emscripten, CMake, Ninja). App source is not scaffolded until **P00**.
+P00 done. Next: **P01** YIN. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
 
 ## Locked (do not reopen)
 
