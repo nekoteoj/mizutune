@@ -1,0 +1,25 @@
+{
+  "name": "mizutune",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "build:wasm": "emcmake cmake -S dsp -B dsp/build-wasm -G Ninja && cmake --build dsp/build-wasm && node dsp/check_wasm.mjs",
+    "test:dsp": "cmake -S dsp -B dsp/build -G Ninja && cmake --build dsp/build && dsp/build/mizutune_dsp_test"
+  },
+  "dependencies": {
+    "@solidjs/web": "2.0.0-rc.9",
+    "solid-js": "2.0.0-rc.9"
+  },
+  "devDependencies": {
+    "@solidjs/vite-plugin": "3.0.0-next.44",
+    "typescript": "^5.9.2",
+    "vite": "^8.1.5",
+    "vitest": "^5.0.2"
+  }
+}

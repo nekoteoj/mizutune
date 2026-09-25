@@ -6,3 +6,12 @@ result-*
 
 # AI Agent
 .agents/skills
+
+# JS
+node_modules
+dist
+
+# DSP
+dsp/build/
+dsp/build-wasm/
+public/mizutune.wasm
