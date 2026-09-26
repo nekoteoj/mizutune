@@ -61,7 +61,7 @@ Tasks 1–3 are in `317cf7e`. Task 4 not started — no guitar trace yet.
 - A low lock below 150 Hz climbs to τ/2, τ/3, or τ/4 when that divisor is still a valley. Analysis highpass is two poles at 180 Hz. A weak floor lock is dropped. A B/E-band valley with d' < 0.6 is kept even when it misses the 0.10 search — that reject was silencing phone plucks. Buried low E stays on E2.
 - `?debug` status is `329.6Hz c0.62 r0.004 wasm` (or `pcm` / `…`).
 - Mic constraints are exact `false`, one `OverconstrainedError` retry to `{ ideal: false }`.
-- Pitch uses the AudioContext clock on every phone. The 45.3k iOS guess read a semitone flat. `?debug` shows that clock.
+- Pitch uses the AudioContext clock on every phone. A semitone side-lobe must not swap the scale; that jump has to hold ~240 ms. iOS mic asks for voiceIsolation off.
 
 Still open: real guitar. Power on with `?debug` and pluck high E. Read the status line before touching C++.
 
