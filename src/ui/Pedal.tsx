@@ -72,7 +72,6 @@ export function Pedal(props: {
               <span class="cents">{centsText()}</span>
               <span class="hz">{props.hz.toFixed(2)} Hz</span>
             </div>
-            <div class="glass" />
           </div>
         </div>
 
@@ -104,7 +103,21 @@ function Footswitch(props: { label: string; pressed?: boolean; onClick: () => vo
       onClick={() => props.onClick()}
     >
       <span class="well" aria-hidden="true">
-        <span class="nut" />
+        <svg class="nut" viewBox="0 0 80 80">
+          <polygon points="40,40 78,40 59,73" fill="#8d8d8d" />
+          <polygon points="40,40 59,73 21,73" fill="#555" />
+          <polygon points="40,40 21,73 2,40" fill="#555" />
+          <polygon points="40,40 2,40 21,7" fill="#8d8d8d" />
+          <polygon points="40,40 21,7 59,7" fill="#cfcfcf" />
+          <polygon points="40,40 59,7 78,40" fill="#cfcfcf" />
+          <polygon
+            points="78,40 59,73 21,73 2,40 21,7 59,7"
+            fill="none"
+            stroke="#333"
+            stroke-width="1.5"
+          />
+          <circle cx="40" cy="40" r="21" fill="#0e4a50" />
+        </svg>
         <span class="cap" />
       </span>
       <span class="switch-label">{props.label}</span>
