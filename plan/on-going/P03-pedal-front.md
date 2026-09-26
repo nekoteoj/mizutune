@@ -1,5 +1,5 @@
 # P03 Pedal front
-Status: plan
+Status: on-going
 Phase: 3
 Depends: P00 (can mock cents until P02)
 
