@@ -10,7 +10,6 @@ class PitchProcessor extends AudioWorkletProcessor {
     this.hop = Math.max(1, Math.round(sampleRate * (o.hopSec || 0.02)));
     this.threshold = o.threshold == null ? 0.1 : o.threshold;
     this.rmsGate = o.rmsGate == null ? 0.001 : o.rmsGate;
-    this.pitchRate = o.pitchRate > 0 ? o.pitchRate : sampleRate;
     this.buf = new Float32Array(this.window);
     this.write = 0;
     this.filled = 0;
@@ -73,7 +72,7 @@ class PitchProcessor extends AudioWorkletProcessor {
       this.outPtr,
       this.samplesPtr,
       this.window,
-      this.pitchRate,
+      sampleRate,
       this.threshold,
       this.rmsGate,
     );
@@ -84,7 +83,7 @@ class PitchProcessor extends AudioWorkletProcessor {
   postPcm() {
     const samples = new Float32Array(this.window);
     this.copyInto(samples);
-    this.port.postMessage({ type: "pcm", sampleRate: this.pitchRate, samples }, [samples.buffer]);
+    this.port.postMessage({ type: "pcm", sampleRate, samples }, [samples.buffer]);
   }
 
   process(inputs, outputs) {

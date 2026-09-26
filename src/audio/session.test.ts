@@ -1,6 +1,6 @@
 import { createRoot, flush } from "solid-js";
 import { expect, test } from "vitest";
-import { createAudioSession, yinSampleRate } from "./session";
+import { createAudioSession } from "./session";
 
 test("does not start audio on create", () => {
   createRoot((dispose) => {
@@ -14,8 +14,3 @@ test("does not start audio on create", () => {
   });
 });
 
-test("a labeled 48k iPhone clock is one semitone sharp", () => {
-  expect(yinSampleRate(48000, true)).toBeCloseTo(48000 / 2 ** (1 / 12), 5);
-  expect(yinSampleRate(44100, true)).toBe(44100);
-  expect(yinSampleRate(48000, false)).toBe(48000);
-});

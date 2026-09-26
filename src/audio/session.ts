@@ -103,14 +103,6 @@ async function openMic() {
   }
 }
 
-// ponytail: labeled 48k on this iPhone is one semitone sharp; 44100 is then a quarter-tone flat. 48000/2^(1/12) lands on the tuner. Remove if another iPhone reads a semitone flat.
-const IOS_48K = 48000 / 2 ** (1 / 12);
-
-export function yinSampleRate(ctxRate: number, apple: boolean) {
-  if (apple && ctxRate === 48000) return IOS_48K;
-  return ctxRate;
-}
-
 export function debugStatus(frame: PitchFrame, mode: Mode | null, rate = 0) {
   const clock = rate ? ` ${(rate / 1000).toFixed(1)}k` : "";
   return `${frame.hz.toFixed(1)}Hz c${frame.clarity.toFixed(2)} r${frame.rms.toFixed(3)} ${mode ?? "…"}${clock}`;
@@ -181,20 +173,17 @@ export function createAudioSession() {
       if (gen !== token) return abort(ctx, stream);
       await ctx.audioWorklet.addModule(WORKLET_URL);
       if (gen !== token) return abort(ctx, stream);
-      const apple = /Apple/.test(navigator.vendor || "") || /iPhone|iPad|iPod/.test(navigator.userAgent || "");
-      const pitchRate = yinSampleRate(ctx.sampleRate, apple);
       node = new AudioWorkletNode(ctx, "mizutune-pitch", {
         processorOptions: {
           window: WINDOW,
           hopSec: HOP_SEC,
           threshold: YIN_THRESHOLD,
           rmsGate: RMS_GATE,
-          pitchRate,
           forcePcm: new URLSearchParams(location.search).has("pcm"),
           wasm: wasmBytes,
         },
       });
-      setRate(pitchRate);
+      setRate(ctx.sampleRate);
       node.port.onmessage = (event: MessageEvent<WorkletMessage>) => {
         if (gen !== token) return;
         const data = event.data;
