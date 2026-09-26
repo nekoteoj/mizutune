@@ -9,7 +9,7 @@ class PitchProcessor extends AudioWorkletProcessor {
     this.window = o.window || 4096;
     this.hop = Math.max(1, Math.round(sampleRate * (o.hopSec || 0.02)));
     this.threshold = o.threshold == null ? 0.1 : o.threshold;
-    this.rmsGate = o.rmsGate == null ? 0.003 : o.rmsGate;
+    this.rmsGate = o.rmsGate == null ? 0.001 : o.rmsGate;
     this.buf = new Float32Array(this.window);
     this.write = 0;
     this.filled = 0;

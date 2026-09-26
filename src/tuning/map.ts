@@ -2,13 +2,15 @@ import { createEffect, createSignal } from "solid-js";
 import { TUNINGS, type Settings } from "./settings";
 
 export const IN_TUNE_CENTS = 5;
-// ponytail: show at d' ≤ 0.5. Sine tests clear 0.8; a mic pluck often does not.
+// Acquire. A mic pluck is not a sine; 0.8 only passed the sine tests.
 export const CLARITY_MIN = 0.5;
-// Shared with the WASM gate in audio/session.ts. 0.01 missed open B / high E.
-export const RMS_GATE = 0.003;
+export const RMS_SHOW = 0.003;
+// Same note, already showing. Also the WASM floor so a thin-string tail is not zeroed.
+export const CLARITY_KEEP = 0.3;
+export const RMS_GATE = 0.001;
 export const SMOOTH_ALPHA = 0.25;
-// ponytail: hop count, not a timer. 12 frames ≈ 250 ms at the 20 ms hop.
-export const HOLD_HOPS = 12;
+// ponytail: hop count, not a timer. 50 frames ≈ 1 s at the 20 ms hop.
+export const HOLD_HOPS = 50;
 
 const SHARP = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
 const FLAT = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"] as const;
@@ -60,11 +62,13 @@ function stringsFor(mode: Settings["mode"], tuningId: string) {
   )?.strings;
 }
 
-export function mapPitch(frame: PitchFrame, settings: Settings): RawReading | null {
+export function mapPitch(frame: PitchFrame, settings: Settings, keep = false): RawReading | null {
   const a4 = settings.a4;
   const mode = settings.mode;
   const tuningId = settings.tuningId;
-  if (!(frame.hz > 0) || !(frame.clarity >= CLARITY_MIN) || !(frame.rms >= RMS_GATE)) return null;
+  const clarityMin = keep ? CLARITY_KEEP : CLARITY_MIN;
+  const rmsMin = keep ? RMS_GATE : RMS_SHOW;
+  if (!(frame.hz > 0) || !(frame.clarity >= clarityMin) || !(frame.rms >= rmsMin)) return null;
   if (!(a4 > 0)) return null;
   const midi = 69 + 12 * Math.log2(frame.hz / a4);
   if (!Number.isFinite(midi)) return null;
@@ -135,11 +139,15 @@ export function createTuner(source: {
   let hang = 0;
 
   createEffect(
-    () => ({
-      raw: mapPitch(source.pitch(), source.settings),
-      on: source.power?.() ?? true,
-    }),
-    ({ raw, on }) => {
+    () => {
+      const frame = source.pitch();
+      return {
+        on: source.power?.() ?? true,
+        strict: mapPitch(frame, source.settings),
+        weak: mapPitch(frame, source.settings, true),
+      };
+    },
+    ({ on, strict, weak }) => {
       if (!on) {
         smooth = null;
         shown = null;
@@ -147,6 +155,7 @@ export function createTuner(source: {
         setView(IDLE_TUNER);
         return;
       }
+      const raw = strict ?? (shown && weak?.key === shown.key ? weak : null);
       if (raw) {
         const next = stepSmooth(smooth, raw);
         if (!next) {
@@ -156,7 +165,7 @@ export function createTuner(source: {
         smooth = next;
         shown = raw;
         hang = HOLD_HOPS;
-        setView(reading(raw, next.cents, true));
+        setView(reading(raw, next.cents, strict != null));
         return;
       }
       if (hang > 0 && shown && smooth) {

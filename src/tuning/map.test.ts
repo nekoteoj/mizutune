@@ -1,11 +1,13 @@
 import { createRoot, createSignal, createStore, flush } from "solid-js";
 import { expect, test } from "vitest";
 import {
+  CLARITY_KEEP,
   CLARITY_MIN,
   HOLD_HOPS,
   IDLE_TUNER,
   IN_TUNE_CENTS,
   RMS_GATE,
+  RMS_SHOW,
   SMOOTH_ALPHA,
   createTuner,
   mapPitch,
@@ -74,9 +76,11 @@ test("guitar and ukulele snap to the nearest preset string", () => {
 });
 
 test("gate blanks the note; ±5¢ is the in-tune window", () => {
-  expect(mapPitch(frame(440, CLARITY_MIN, RMS_GATE), chromatic)?.midi).toBe(69);
+  expect(mapPitch(frame(440, CLARITY_MIN, RMS_SHOW), chromatic)?.midi).toBe(69);
   expect(mapPitch(frame(440, CLARITY_MIN - 0.01, 1), chromatic)).toBeNull();
-  expect(mapPitch(frame(440, 1, RMS_GATE - 0.001), chromatic)).toBeNull();
+  expect(mapPitch(frame(440, 1, RMS_SHOW - 0.001), chromatic)).toBeNull();
+  expect(mapPitch(frame(440, CLARITY_KEEP, RMS_GATE), chromatic)).toBeNull();
+  expect(mapPitch(frame(440, CLARITY_KEEP, RMS_GATE), chromatic, true)?.midi).toBe(69);
   expect(mapPitch(frame(0, 1, 1), chromatic)).toBeNull();
   expect(mapPitch(frame(Number.NaN), chromatic)).toBeNull();
 
@@ -166,7 +170,33 @@ test("tuner store maps hz and tracks settings", () => {
   run.dispose();
 });
 
-test("one dropout holds E4; the 13th null clears and the next frame restarts", () => {
+test("a weak same note keeps tracking; a weak other note does not steal", () => {
+  const run = createRoot((dispose) => {
+    const [pitch, setPitch] = createSignal<PitchFrame>({ hz: 0, clarity: 0, rms: 0 });
+    const view = createTuner({ pitch, settings: chromatic });
+    return { view, setPitch, dispose };
+  });
+  flush();
+
+  run.setPitch(frame(hzOf(64)));
+  flush();
+  expect(run.view().inTune).toBe(true);
+
+  run.setPitch(frame(hzOf(64, 440, 20), CLARITY_KEEP, RMS_GATE));
+  flush();
+  expect(run.view().note).toBe("E");
+  expect(run.view().octave).toBe(4);
+  expect(run.view().cents).toBeCloseTo(20 * SMOOTH_ALPHA, 3);
+  expect(run.view().inTune).toBe(false);
+
+  run.setPitch(frame(hzOf(69), CLARITY_KEEP, 1));
+  flush();
+  expect(run.view().note).toBe("E");
+  expect(run.view().octave).toBe(4);
+  run.dispose();
+});
+
+test("one dropout holds E4; hang expiry clears and the next frame restarts", () => {
   const run = createRoot((dispose) => {
     const [pitch, setPitch] = createSignal<PitchFrame>({ hz: 0, clarity: 0, rms: 0 });
     const view = createTuner({ pitch, settings: chromatic });
