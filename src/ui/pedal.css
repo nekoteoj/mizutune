@@ -56,16 +56,38 @@ body {
   perspective: 1200px;
 }
 
+.zoom {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.zoom.go {
+  animation: dolly 0.85s ease forwards;
+}
+
+@keyframes dolly {
+  0%, 100% { transform: scale(1); }
+  18%, 76% { transform: scale(0.8); }
+}
+
 .rotor {
+  --d: 1.35rem;
   position: relative;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.5s ease;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.5s ease 0.15s;
 }
 
 .rotor.back {
   transform: rotateY(180deg);
+}
+
+.zoom.go .pedal {
+  box-shadow: none;
 }
 
 .pedal {
@@ -90,11 +112,55 @@ body {
 }
 
 .pedal.front {
-  transform: translateZ(1px);
+  transform: translateZ(calc(var(--d) / 2));
 }
 
 .pedal.rear {
-  transform: rotateY(180deg) translateZ(1px);
+  transform: rotateY(180deg) translateZ(calc(var(--d) / 2));
+}
+
+.edge {
+  position: absolute;
+  background: #082c30;
+  pointer-events: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.edge.right {
+  top: 0;
+  bottom: 0;
+  width: var(--d);
+  left: 100%;
+  margin-left: calc(var(--d) / -2);
+  transform: rotateY(90deg);
+}
+
+.edge.left {
+  top: 0;
+  bottom: 0;
+  width: var(--d);
+  left: 0;
+  margin-left: calc(var(--d) / -2);
+  transform: rotateY(-90deg);
+}
+
+.edge.top {
+  left: 0;
+  right: 0;
+  height: var(--d);
+  top: 0;
+  margin-top: calc(var(--d) / -2);
+  transform: rotateX(-90deg);
+}
+
+.edge.bottom {
+  left: 0;
+  right: 0;
+  height: var(--d);
+  bottom: 0;
+  margin-bottom: calc(var(--d) / -2);
+  transform: rotateX(90deg);
 }
 
 .rotor.back .pedal.front,
@@ -436,5 +502,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .rotor {
     transition: none;
+  }
+
+  .zoom.go {
+    animation: none;
   }
 }

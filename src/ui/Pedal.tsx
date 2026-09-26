@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { spell } from "../tuning/map";
 import type { Settings } from "../tuning/settings";
 import { tuningsFor } from "../tuning/settings";
@@ -32,12 +32,22 @@ export function Pedal(props: {
     const n = Math.round(props.cents);
     return `${n > 0 ? "+" : ""}${n}¢`;
   };
+  const [zoom, setZoom] = createSignal(false);
+  const dolly = () => {
+    if (!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) setZoom(true);
+  };
 
   return (
     <div class="stage">
       <div class="flip">
-        <div class={["rotor", { back: props.face }]}>
-          <div class={["pedal", "front", { on: props.power }]} inert={props.face}>
+        <div
+          class={["zoom", { go: zoom() }]}
+          onAnimationEnd={(e) => {
+            if (e.target === e.currentTarget) setZoom(false);
+          }}
+        >
+          <div class={["rotor", { back: props.face }]}>
+          <div class={["pedal", "front", { on: props.power }]} inert={props.face || zoom()}>
             <Screws />
             <div class={["window", { on: props.power, tune: props.inTune }]} style={`--cents: ${props.cents}`}>
               <div class="card">
@@ -69,13 +79,13 @@ export function Pedal(props: {
               </div>
               <div class="switch-col">
                 <span class="led spacer" />
-                <Footswitch label="Setup" onClick={() => props.onSetup()} />
+                <Footswitch label="Setup" onClick={() => { dolly(); props.onSetup(); }} />
               </div>
             </div>
             <p class="status">{props.status}</p>
           </div>
 
-          <div class="pedal rear" inert={!props.face}>
+          <div class="pedal rear" inert={!props.face || zoom()}>
             <Screws />
             <div class="settings">
               <label class="field">
@@ -128,10 +138,15 @@ export function Pedal(props: {
             </div>
             <p class="wordmark">MIZUTUNE</p>
             <div class="switches end">
-              <Footswitch label="Back" onClick={() => props.onBack()} />
+              <Footswitch label="Back" onClick={() => { dolly(); props.onBack(); }} />
             </div>
             <p class="status" />
           </div>
+          <span class="edge left" aria-hidden="true" />
+          <span class="edge right" aria-hidden="true" />
+          <span class="edge top" aria-hidden="true" />
+          <span class="edge bottom" aria-hidden="true" />
+        </div>
         </div>
       </div>
     </div>
