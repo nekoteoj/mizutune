@@ -57,7 +57,7 @@ Do in order. Stop after task 2 if a real guitar is already stable.
 Tasks 1–3 are in `317cf7e`. Task 4 not started — no guitar trace yet.
 
 - Show gate is clarity 0.5 / rms 0.003. `RMS_GATE` lives in `src/tuning/map.ts`; the worklet gets the same number.
-- Hang is 12 failed hops. Cents freeze. In-tune is fresh frames only. Vitest covers the E4 hold.
+- Hang is 12 failed hops. Cents freeze. In-tune is fresh frames only. Power off clears immediately, so the last note does not sit on a dark LCD. Vitest covers the E4 hold and power-off.
 - `?debug` status is `329.6Hz c0.62 r0.004 wasm` (or `pcm` / `…`).
 - Mic constraints are exact `false`, one `OverconstrainedError` retry to `{ ideal: false }`.
 
