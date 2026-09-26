@@ -223,6 +223,22 @@ body {
   border-top: 0;
 }
 
+.window.tune .needle {
+  background: #1f7a4a;
+}
+
+.window.tune .needle::before {
+  border-top-color: #1f7a4a;
+}
+
+.window.tune .needle::after {
+  border-bottom-color: #1f7a4a;
+}
+
+.window.tune .cents {
+  color: #1f7a4a;
+}
+
 .figures {
   display: grid;
   justify-items: center;
@@ -240,10 +256,6 @@ body {
 
 .cents {
   font-size: 2rem;
-}
-
-.hz {
-  font-size: 1.2rem;
 }
 
 .wordmark {
@@ -279,6 +291,10 @@ body {
 
 .led.on {
   background: #c41e3a;
+}
+
+.led.on.tune {
+  background: #1f7a4a;
 }
 
 .led.spacer {

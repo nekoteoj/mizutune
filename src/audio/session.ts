@@ -82,7 +82,6 @@ export function createAudioSession() {
   const [power, setPower] = createSignal(false);
   const [pitch, setPitch] = createSignal<PitchFrame>(SILENT);
   const [error, setError] = createSignal<string | null>(null);
-  const [detail, setDetail] = createSignal<string | null>(null);
 
   let graph: Graph | null = null;
   let token = 0;
@@ -100,7 +99,6 @@ export function createAudioSession() {
     analyzing = false;
     setPower(false);
     setPitch(SILENT);
-    setDetail(null);
   }
 
   async function onPcm(samples: Float32Array, sampleRate: number, gen: number) {
@@ -160,16 +158,7 @@ export function createAudioSession() {
       node.port.onmessage = (event: MessageEvent<WorkletMessage>) => {
         if (gen !== token) return;
         const data = event.data;
-        if (data.type === "mode") {
-          setDetail(
-            data.mode === "pcm"
-              ? data.error
-                ? `pcm fallback: ${data.error}`
-                : "pcm fallback"
-              : "wasm",
-          );
-          return;
-        }
+        if (data.type === "mode") return;
         if (data.type === "pitch") {
           setPitch({ hz: data.hz, clarity: data.clarity, rms: data.rms });
           return;
@@ -204,5 +193,5 @@ export function createAudioSession() {
     graph = null;
   });
 
-  return { power, pitch, error, detail, start, stop };
+  return { power, pitch, error, start, stop };
 }

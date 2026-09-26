@@ -1,5 +1,5 @@
 # P05 Wire tuner
-Status: plan
+Status: on-going
 Phase: 5
 Depends: P02, P03, P04
 

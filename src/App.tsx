@@ -1,27 +1,27 @@
 import { createSignal } from "solid-js";
 import { createAudioSession } from "./audio/session";
+import { createTuner } from "./tuning/map";
 import { createSettings } from "./tuning/settings";
 import { Pedal } from "./ui/Pedal";
-
-const params = new URLSearchParams(location.search);
-const mockCents = Number(params.get("cents") ?? "0") || 0;
-const mockNote = params.get("note") || "E";
-const mockOctave = Number(params.get("oct") ?? "4") || 4;
 
 export default function App() {
   const audio = createAudioSession();
   const settings = createSettings();
+  const tuner = createTuner({ pitch: audio.pitch, settings: settings.state });
   const [face, setFace] = createSignal(false);
 
   return (
     <Pedal
       power={audio.power()}
       face={face()}
-      note={mockNote}
-      octave={mockOctave}
-      cents={mockCents}
-      hz={audio.pitch().hz}
-      status={audio.error() ?? audio.detail() ?? ""}
+      live={tuner().live}
+      inTune={tuner().inTune}
+      note={tuner().note}
+      octave={tuner().octave}
+      cents={tuner().cents}
+      flats={tuner().flats}
+      midi={tuner().midi}
+      status={audio.error() ?? ""}
       settings={settings.state}
       onPower={() => {
         if (audio.power()) audio.stop();

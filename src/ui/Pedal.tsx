@@ -1,33 +1,19 @@
 import { For, Show } from "solid-js";
+import { spell } from "../tuning/map";
 import type { Settings } from "../tuning/settings";
 import { tuningsFor } from "../tuning/settings";
 import "./pedal.css";
 
-const NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
-
-const PC: Record<string, number> = {
-  C: 0, "C#": 1, DB: 1, D: 2, "D#": 3, EB: 3, E: 4,
-  F: 5, "F#": 6, GB: 6, G: 7, "G#": 8, AB: 8,
-  A: 9, "A#": 10, BB: 10, B: 11,
-};
-
-function midiOf(note: string, octave: number) {
-  const key = note.trim().replace("♯", "#").replace("♭", "b").toUpperCase();
-  return (octave + 1) * 12 + (PC[key] ?? 4);
-}
-
-function nameOf(midi: number) {
-  const n = ((midi % 12) + 12) % 12;
-  return `${NAMES[n]}${Math.floor(midi / 12) - 1}`;
-}
-
 export function Pedal(props: {
   power: boolean;
   face: boolean;
+  live: boolean;
+  inTune: boolean;
   note: string;
   octave: number;
   cents: number;
-  hz: number;
+  flats: boolean;
+  midi: number;
   status: string;
   settings: Settings;
   onPower: () => void;
@@ -37,14 +23,11 @@ export function Pedal(props: {
   onMode: (mode: string) => void;
   onTuning: (id: string) => void;
 }) {
-  const neighbors = () => {
-    const m = midiOf(props.note, props.octave);
-    return [-2, -1, 0, 1, 2].map((d) => ({
-      midi: m + d,
-      at: (d + 2) * 100,
-      label: nameOf(m + d),
-    }));
-  };
+  const neighbors = () =>
+    [-2, -1, 0, 1, 2].map((d) => {
+      const midi = props.midi + d;
+      return { midi, at: (d + 2) * 100, label: spell(midi, props.flats).label };
+    });
   const centsText = () => {
     const n = Math.round(props.cents);
     return `${n > 0 ? "+" : ""}${n}¢`;
@@ -56,34 +39,32 @@ export function Pedal(props: {
         <div class={["rotor", { back: props.face }]}>
           <div class={["pedal", "front", { on: props.power }]} inert={props.face}>
             <Screws />
-            <div class={["window", { on: props.power }]} style={`--cents: ${props.cents}`}>
+            <div class={["window", { on: props.power, tune: props.inTune }]} style={`--cents: ${props.cents}`}>
               <div class="card">
                 <div class="meter" aria-hidden="true">
                   <div class="scale">
-                    <For each={neighbors()} keyed={(n) => n.midi}>
-                      {(n) => (
-                        <span class="mark" style={`left: calc(${n().at} * var(--px))`}>
-                          {n().label}
-                        </span>
-                      )}
-                    </For>
+                    <Show when={props.live}>
+                      <For each={neighbors()} keyed={(n) => n.midi}>
+                        {(n) => (
+                          <span class="mark" style={`left: calc(${n().at} * var(--px))`}>
+                            {n().label}
+                          </span>
+                        )}
+                      </For>
+                    </Show>
                   </div>
                   <div class="needle" />
                 </div>
                 <div class="figures" aria-live="polite">
-                  <span class="now">
-                    {props.note}
-                    {props.octave}
-                  </span>
-                  <span class="cents">{centsText()}</span>
-                  <span class="hz">{props.hz.toFixed(2)} Hz</span>
+                  <span class="now">{props.live ? `${props.note}${props.octave}` : "—"}</span>
+                  <span class="cents">{props.live ? centsText() : ""}</span>
                 </div>
               </div>
             </div>
             <p class="wordmark">MIZUTUNE</p>
             <div class="switches">
               <div class="switch-col">
-                <span class={["led", { on: props.power }]} />
+                <span class={["led", { on: props.power, tune: props.inTune }]} />
                 <Footswitch label="Power" pressed={props.power} onClick={() => props.onPower()} />
               </div>
               <div class="switch-col">
