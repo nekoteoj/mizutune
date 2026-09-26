@@ -63,4 +63,4 @@ Solid 2: components run once; live values in signals/stores; `createEffect(compu
 
 ## Phases
 
-P00 scaffold → P01 YIN → P02 worklet → P03 front → P04 flip/settings → P05 wire → P06 PWA+iOS.
+P00 scaffold → P01 YIN → P02 worklet → P03 front → P04 flip/settings → P05 wire → P06 PWA+iOS → P07 GitHub Pages.

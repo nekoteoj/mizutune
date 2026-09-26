@@ -26,4 +26,4 @@ Shell is in. Do not move to finished until the iPhone gate is checked.
 Manual, before finished:
 
 - Desktop: real guitar, in-tune meter
-- iPhone Safari over **HTTPS** (LAN `http://` will not get a mic or a service worker): mic, live pitch, flip, Add to Home Screen, then airplane-mode reload still shows the pedal
+- iPhone Safari at the P07 Pages URL (`https://nekoteoj.github.io/mizutune/`): mic, live pitch, flip, Add to Home Screen, then airplane-mode reload still shows the pedal. LAN `http://` will not get a mic or a service worker

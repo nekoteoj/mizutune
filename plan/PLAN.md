@@ -239,6 +239,7 @@ Do in order. One phase in `on-going/` at a time.
 | 4 | `P04` flip | 3D flip, A4 + mode + presets, persist |
 | 5 | `P05` wire | Debug readout gone; live meter + chromatic/fixed |
 | 6 | `P06` PWA | Manifest, SW, mobile fullscreen, polish |
+| 7 | `P07` Pages | GitHub Pages HTTPS at `/mizutune/` — iPhone check URL |
 
 Cards live in `plan/plan/` until picked.
 
