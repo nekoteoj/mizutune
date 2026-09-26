@@ -7,7 +7,7 @@ import { Pedal } from "./ui/Pedal";
 export default function App() {
   const audio = createAudioSession();
   const settings = createSettings();
-  const tuner = createTuner({ pitch: audio.pitch, settings: settings.state, power: audio.power });
+  const tuner = createTuner({ pitch: audio.pitch, settings: settings.state, power: () => audio.power() && audio.mic() });
   const [face, setFace] = createSignal(false);
   const debug = new URLSearchParams(globalThis.location?.search ?? "").has("debug");
 

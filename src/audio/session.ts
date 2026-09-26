@@ -111,6 +111,7 @@ export function debugStatus(frame: PitchFrame, mode: Mode | null, rate = 0) {
 
 export function createAudioSession() {
   const [power, setPower] = createSignal(false);
+  const [mic, setMic] = createSignal(false);
   const [pitch, setPitch] = createSignal<PitchFrame>(SILENT);
   const [mode, setMode] = createSignal<Mode | null>(null);
   const [rate, setRate] = createSignal(0);
@@ -119,6 +120,8 @@ export function createAudioSession() {
   let graph: Graph | null = null;
   let token = 0;
   let starting = false;
+  let held = false;
+  let reopening = false;
   let analyzing = false;
   let wasmBytes: ArrayBuffer | null = null;
   let runner: ReturnType<typeof loadPitchWasm> | null = null;
@@ -127,13 +130,63 @@ export function createAudioSession() {
     token++;
     release(graph);
     graph = null;
+    held = false;
     runner = null;
     wasmBytes = null;
     analyzing = false;
     setPower(false);
+    setMic(false);
     setPitch(SILENT);
     setMode(null);
     setRate(0);
+  }
+
+  function pageHidden() {
+    return globalThis.document?.visibilityState === "hidden";
+  }
+
+  function holdMic() {
+    if (!graph || held) return;
+    graph.source.disconnect();
+    for (const track of graph.stream.getTracks()) track.stop();
+    held = true;
+    setMic(false);
+    setPitch(SILENT);
+  }
+
+  function hide() {
+    if (graph) {
+      holdMic();
+      return;
+    }
+    // In-flight start has no graph yet. Bump the token so its abort stops the track.
+    if (starting) token++;
+  }
+
+  async function show() {
+    if (!held || !graph || !power() || reopening || pageHidden()) return;
+    reopening = true;
+    const gen = token;
+    const ctx = graph.ctx;
+    try {
+      const stream = await openMic();
+      if (gen !== token || !graph || !power() || !held || pageHidden()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(graph.node);
+      graph.stream = stream;
+      graph.source = source;
+      held = false;
+      setMic(true);
+      setError(null);
+      void ctx.resume().catch(() => {});
+    } catch (err) {
+      if (gen === token) setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      reopening = false;
+    }
   }
 
   async function onPcm(samples: Float32Array, sampleRate: number, gen: number) {
@@ -186,7 +239,7 @@ export function createAudioSession() {
       });
       setRate(ctx.sampleRate);
       node.port.onmessage = (event: MessageEvent<WorkletMessage>) => {
-        if (gen !== token) return;
+        if (gen !== token || held) return;
         const data = event.data;
         if (data.type === "mode") {
           setMode(data.mode);
@@ -211,6 +264,8 @@ export function createAudioSession() {
       }
       graph = { ctx, stream, source, node, mute };
       setPower(true);
+      setMic(true);
+      if (pageHidden()) holdMic();
     } catch (err) {
       if (node) node.port.onmessage = null;
       abort(ctx, stream);
@@ -225,9 +280,26 @@ export function createAudioSession() {
     if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
   };
   const doc = globalThis.document;
+  const onVis = () => (pageHidden() ? hide() : void show());
+  const onPageShow = () => {
+    if (!pageHidden()) void show();
+  };
   if (doc) {
     doc.addEventListener("pointerdown", resume, true);
-    onCleanup(() => doc.removeEventListener("pointerdown", resume, true));
+    doc.addEventListener("visibilitychange", onVis);
+    onCleanup(() => {
+      doc.removeEventListener("pointerdown", resume, true);
+      doc.removeEventListener("visibilitychange", onVis);
+    });
+  }
+  const page = globalThis.window;
+  if (page) {
+    page.addEventListener("pagehide", hide);
+    page.addEventListener("pageshow", onPageShow);
+    onCleanup(() => {
+      page.removeEventListener("pagehide", hide);
+      page.removeEventListener("pageshow", onPageShow);
+    });
   }
 
   onCleanup(() => {
@@ -236,5 +308,5 @@ export function createAudioSession() {
     graph = null;
   });
 
-  return { power, pitch, mode, rate, error, start, stop };
+  return { power, mic, pitch, mode, rate, error, start, stop };
 }
