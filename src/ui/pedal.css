@@ -157,6 +157,27 @@ body {
   pointer-events: none;
 }
 
+.needle::before,
+.needle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+}
+
+.needle::before {
+  top: 0;
+  border-top-color: #c41e3a;
+  border-bottom: 0;
+}
+
+.needle::after {
+  bottom: 0;
+  border-bottom-color: #c41e3a;
+  border-top: 0;
+}
+
 .figures {
   display: grid;
   justify-items: center;
