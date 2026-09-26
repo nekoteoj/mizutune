@@ -207,3 +207,19 @@ test("one dropout holds E4; the 13th null clears and the next frame restarts", (
   expect(run.view().cents).toBeCloseTo(20, 3);
   run.dispose();
 });
+
+test("power off clears a held note without waiting out the hang", () => {
+  const run = createRoot((dispose) => {
+    const [pitch] = createSignal<PitchFrame>(frame(hzOf(64)));
+    const [power, setPower] = createSignal(true);
+    const view = createTuner({ pitch, settings: chromatic, power });
+    return { view, setPower, dispose };
+  });
+  flush();
+  expect(run.view().live).toBe(true);
+
+  run.setPower(false);
+  flush();
+  expect(run.view()).toEqual(IDLE_TUNER);
+  run.dispose();
+});

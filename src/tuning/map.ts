@@ -124,15 +124,29 @@ function reading(raw: RawReading, cents: number, fresh: boolean): TunerView {
   };
 }
 
-export function createTuner(source: { pitch: () => PitchFrame; settings: Settings }) {
+export function createTuner(source: {
+  pitch: () => PitchFrame;
+  settings: Settings;
+  power?: () => boolean;
+}) {
   const [view, setView] = createSignal<TunerView>(IDLE_TUNER);
   let smooth: Smooth | null = null;
   let shown: RawReading | null = null;
   let hang = 0;
 
   createEffect(
-    () => mapPitch(source.pitch(), source.settings),
-    (raw) => {
+    () => ({
+      raw: mapPitch(source.pitch(), source.settings),
+      on: source.power?.() ?? true,
+    }),
+    ({ raw, on }) => {
+      if (!on) {
+        smooth = null;
+        shown = null;
+        hang = 0;
+        setView(IDLE_TUNER);
+        return;
+      }
       if (raw) {
         const next = stepSmooth(smooth, raw);
         if (!next) {
