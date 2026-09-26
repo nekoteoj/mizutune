@@ -241,6 +241,7 @@ Do in order. One phase in `on-going/` at a time.
 | 6 | `P06` PWA | Manifest, SW, mobile fullscreen, polish |
 | 7 | `P07` Pages | GitHub Pages HTTPS at `/mizutune/` — iPhone check URL |
 | 8 | `P08` stable pitch | Hold, quieter gate, `?debug`. iOS semitone swap is backlog |
+| 9 | `P09` pause when hidden | Mic off on tab/app hide; power stays on |
 
 Cards live in `plan/plan/` until picked.
 
