@@ -23,6 +23,8 @@ constexpr int k_max_n = 8192;
 
 float g_x[k_max_n];
 double g_d[k_max_n / 2];
+// ponytail: one worklet thread. Forget on silence. A semitone side-lobe must not swap the name.
+int g_prev_tau = 0;
 
 PitchResult gated(float rms) { return {0.f, 0.f, rms}; }
 
@@ -34,7 +36,10 @@ extern "C" PitchResult pitch_yin(
     float sample_rate,
     float yin_threshold,
     float rms_gate) {
-  if (!samples || n < 4 || !(sample_rate > 0.f)) return gated(0.f);
+  if (!samples || n < 4 || !(sample_rate > 0.f)) {
+    g_prev_tau = 0;
+    return gated(0.f);
+  }
   if (n > k_max_n) {
     samples += n - k_max_n;
     n = k_max_n;
@@ -163,8 +168,40 @@ extern "C" PitchResult pitch_yin(
     if (alt > 0 && (missed || g_d[alt] + 0.05 < g_d[tau])) tau = alt;
   }
   // Still a weak floor lock: C#2. A high-band dip under k_show is kept.
-  if (tau > 0 && sample_rate / (float)tau < k_climb_hz && g_d[tau] >= yin_threshold) return gated(rms);
-  if (tau <= 0 || g_d[tau] >= k_show) return gated(rms);
+  if (tau > 0 && sample_rate / (float)tau < k_climb_hz && g_d[tau] >= yin_threshold) {
+    g_prev_tau = 0;
+    return gated(rms);
+  }
+  if (tau <= 0 || g_d[tau] >= k_show) {
+    g_prev_tau = 0;
+    return gated(rms);
+  }
+
+  auto valley_near = [&](int origin, int slack) -> int {
+    int lo = origin - slack;
+    int hi = origin + slack;
+    if (lo < tau_min) lo = tau_min;
+    if (hi > tau_max) hi = tau_max;
+    int t = lo;
+    for (int i = lo + 1; i <= hi; ++i)
+      if (g_d[i] < g_d[t]) t = i;
+    if (t <= tau_min || t >= tau_max) return -1;
+    if (g_d[t] > g_d[t - 1] || g_d[t] > g_d[t + 1]) return -1;
+    return t;
+  };
+  // A shallow dip a semitone sharp can cross 0.10 first and lock at ±2¢ on the wrong name.
+  if (tau > tau_min) {
+    int flat = valley_near((int)(tau * 1.0594631 + 0.5), 3);
+    if (flat > 0 && g_d[flat] + 0.02 < g_d[tau]) tau = flat;
+  }
+  if (g_prev_tau > tau_min && g_prev_tau < tau_max) {
+    const double ratio = (double)tau / g_prev_tau;
+    const bool neighbor = (ratio > 1.04 && ratio < 1.08) || (ratio > 0.93 && ratio < 0.96);
+    if (neighbor && g_d[g_prev_tau] <= g_d[g_prev_tau - 1] && g_d[g_prev_tau] <= g_d[g_prev_tau + 1] &&
+        g_d[g_prev_tau] < k_show && g_d[g_prev_tau] < g_d[tau] + 0.04)
+      tau = g_prev_tau;
+  }
+  g_prev_tau = tau;
 
   double tau_f = tau;
   if (tau > tau_min && tau < tau_max) {

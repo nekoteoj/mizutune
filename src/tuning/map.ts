@@ -13,6 +13,8 @@ export const SMOOTH_ALPHA = 0.25;
 export const HOLD_HOPS = 50;
 // One rumble frame must not replace the note and then hang for a second.
 export const SWITCH_FRAMES = 3;
+// A clean lock a semitone off (cents still ~0) must not swap the scale. ~240 ms.
+export const SEMI_SWITCH_FRAMES = 12;
 
 const SHARP = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
 const FLAT = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"] as const;
@@ -168,7 +170,9 @@ export function createTuner(source: {
           agreeKey = strict.key;
           agreeN = 1;
         }
-        if (agreeN < SWITCH_FRAMES) raw = null;
+        const jump = Math.abs(Number(strict.key) - Number(shown.key));
+        const need = jump === 1 ? SEMI_SWITCH_FRAMES : SWITCH_FRAMES;
+        if (agreeN < need) raw = null;
         else {
           agreeKey = "";
           agreeN = 0;

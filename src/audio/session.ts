@@ -82,6 +82,7 @@ const MIC_OFF = {
   echoCancellation: false,
   noiseSuppression: false,
   autoGainControl: false,
+  voiceIsolation: false,
 };
 const MIC_IDEAL = {
   echoCancellation: { ideal: false },

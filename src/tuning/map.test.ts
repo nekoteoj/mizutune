@@ -8,6 +8,7 @@ import {
   IN_TUNE_CENTS,
   RMS_GATE,
   RMS_SHOW,
+  SEMI_SWITCH_FRAMES,
   SMOOTH_ALPHA,
   SWITCH_FRAMES,
   createTuner,
@@ -232,6 +233,32 @@ test("one low frame does not replace E4; three agreeing frames do", () => {
   }
   expect(run.view().note).toBe("E");
   expect(run.view().octave).toBe(2);
+  run.dispose();
+});
+
+test("a semitone lock does not swap the scale until it holds", () => {
+  const run = createRoot((dispose) => {
+    const [pitch, setPitch] = createSignal<PitchFrame>({ hz: 0, clarity: 0, rms: 0 });
+    const view = createTuner({ pitch, settings: chromatic });
+    return { view, setPitch, dispose };
+  });
+  flush();
+
+  run.setPitch(frame(hzOf(64)));
+  flush();
+  expect(run.view().note).toBe("E");
+  expect(run.view().cents).toBeCloseTo(0, 5);
+
+  for (let i = 0; i < SEMI_SWITCH_FRAMES - 1; i++) {
+    run.setPitch(frame(hzOf(65)));
+    flush();
+    expect(run.view().note).toBe("E");
+    expect(run.view().octave).toBe(4);
+  }
+  run.setPitch(frame(hzOf(65)));
+  flush();
+  expect(run.view().note).toBe("F");
+  expect(run.view().cents).toBeCloseTo(0, 5);
   run.dispose();
 });
 
