@@ -7,7 +7,8 @@ namespace {
 // ponytail: guitar window 70–1400 Hz. Widen if bass or high frets miss.
 constexpr float k_f_min = 70.f;
 constexpr float k_f_max = 1400.f;
-constexpr float k_hp_hz = 60.f;
+// Two poles. One pole at 60 Hz left 70–100 Hz energy, which shoved E4 sharp into F4.
+constexpr float k_hp_hz = 180.f;
 // Rumble hides d'(τ) above the search threshold while d'(4τ) looks perfect.
 // Climb only from a low lock, and only to a divisor that is still a valley.
 constexpr float k_climb_hz = 150.f;
@@ -39,21 +40,25 @@ extern "C" PitchResult pitch_yin(
   const float rms = (float)sqrt(energy / n);
   if (!(rms > 0.f) || rms < rms_gate) return gated(rms);
 
-  // 1-pole rumble highpass. Steady-state sine frequency is unchanged.
+  // Steady-state sine frequency is unchanged.
   const float dt = 1.f / sample_rate;
   const float rc = 1.f / (2.f * 3.14159265f * k_hp_hz);
   const float a = rc / (rc + dt);
-  float y = 0.f;
+  float y1 = 0.f;
+  float y1_prev = 0.f;
+  float y2 = 0.f;
   float prev = samples[0];
   g_x[0] = 0.f;
   for (int i = 1; i < n; ++i) {
-    y = a * (y + samples[i] - prev);
+    y1 = a * (y1 + samples[i] - prev);
     prev = samples[i];
-    g_x[i] = y;
+    y2 = a * (y2 + y1 - y1_prev);
+    y1_prev = y1;
+    g_x[i] = y2;
   }
 
   // Drop the HP transient so it cannot pull τ off by a fraction of a sample.
-  int start = (int)(sample_rate / k_hp_hz);
+  int start = 2 * (int)(sample_rate / k_hp_hz);
   if (start > n / 4) start = n / 4;
   const int len = n - start;
   const float* in = g_x + start;
@@ -116,6 +121,7 @@ extern "C" PitchResult pitch_yin(
 
   // E4 + a little 70–90 Hz energy otherwise reports E2/F2/C#2. A real low E
   // has no valley at τ/2, so this does not octave-up the wound strings.
+  const int tau_low = tau;
   if (tau > tau_min && sample_rate / (float)tau < k_climb_hz) {
     int climbed = tau;
     for (int div = 2; div <= 4 && tau / div >= tau_min; ++div) {
@@ -134,6 +140,9 @@ extern "C" PitchResult pitch_yin(
     }
     tau = climbed;
   }
+  // No dip under the threshold, and no high-string valley to climb to.
+  // That global min sits on the 70 Hz floor and chromatic-rounds to C#2.
+  if (tau == tau_low && g_d[tau] >= yin_threshold) return gated(rms);
 
   double tau_f = tau;
   if (tau > tau_min && tau < tau_max) {

@@ -109,7 +109,12 @@ int main() {
   std::vector<float> rumble(k_n, 0.f);
   add_sine(rumble, e4, 0.04, 0.2);
   add_sine(rumble, 78.0, 0.03, 0.5);
-  expect_hz("E4 under rumble", rumble, e4, 50.0);
+  expect_hz("E4 under rumble", rumble, e4, 20.0);
+
+  std::vector<float> hum(k_n, 0.f);
+  add_sine(hum, e4, 0.04, 0.2);
+  add_sine(hum, 69.3, 0.06, 0.8);
+  expect_hz("E4 over C#2 hum", hum, e4, 20.0);
 
   std::vector<float> both(k_n, 0.f);
   add_sine(both, e4, 0.05, 0.2);
