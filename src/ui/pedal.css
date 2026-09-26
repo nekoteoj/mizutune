@@ -12,7 +12,20 @@ body,
 }
 
 body {
-  background: #111;
+  background-color: #6a4328;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      rgba(0, 0, 0, 0.05) 3px 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #7a4e2e 0 92px,
+      #5c381e 92px 96px,
+      #8a5734 96px 188px,
+      #4e2e16 188px 192px
+    );
   color: #eadfca;
   font-family: Arial, Helvetica, sans-serif;
   -webkit-tap-highlight-color: transparent;
