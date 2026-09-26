@@ -73,7 +73,7 @@ body {
 .screw.br { bottom: 0.75rem; right: 0.65rem; }
 
 .window {
-  --px: 2.1px;
+  --px: 1.45px;
   --cents: 0;
   min-height: 0;
   padding: 0.5rem;
