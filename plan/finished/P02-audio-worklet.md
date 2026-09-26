@@ -1,5 +1,5 @@
 # P02 Audio I/O
-Status: on-going
+Status: finished
 Phase: 2
 Depends: P01
 
@@ -14,3 +14,4 @@ Depends: P01
 ## Notes
 
 Do not start audio on page load. iOS resume-on-touch is P06.
+`?pcm=1` forces the main-thread WASM fallback. Worklet has no `fetch`; main passes the bytes.
