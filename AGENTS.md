@@ -6,7 +6,7 @@ Read `plan/PLAN.md` before writing code. Cards: `plan/plan/` → `plan/on-going/
 
 ## Status
 
-P05 done. Next: **P06** PWA. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
+P05 done. **P06** in progress (PWA shell in; iPhone check open). Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
 
 ## Locked (do not reopen)
 

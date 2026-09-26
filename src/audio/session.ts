@@ -126,18 +126,19 @@ export function createAudioSession() {
     setError(null);
     // Context + resume stay in the gesture. Permission await must not come first.
     const ctx = new AudioContext();
-    void ctx.resume();
+    void ctx.resume().catch(() => {});
     const wasmReady = fetchWasmBytes();
     void wasmReady.catch(() => {});
     let stream: MediaStream | null = null;
     let node: AudioWorkletNode | null = null;
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error("microphone unavailable");
+      // ponytail: ideal, not exact. exact false is OverconstrainedError on iOS; a retry is past the gesture.
       stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
+          echoCancellation: { ideal: false },
+          noiseSuppression: { ideal: false },
+          autoGainControl: { ideal: false },
         },
       });
       if (gen !== token) return abort(ctx, stream);
@@ -171,7 +172,7 @@ export function createAudioSession() {
       source.connect(node);
       node.connect(mute);
       mute.connect(ctx.destination);
-      if (ctx.state === "suspended") await ctx.resume();
+      if (ctx.state !== "running") await ctx.resume().catch(() => {});
       if (gen !== token) {
         release({ ctx, stream, source, node, mute });
         return;
@@ -185,6 +186,16 @@ export function createAudioSession() {
     } finally {
       starting = false;
     }
+  }
+
+  const resume = () => {
+    const ctx = graph?.ctx;
+    if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
+  };
+  const doc = globalThis.document;
+  if (doc) {
+    doc.addEventListener("pointerdown", resume, true);
+    onCleanup(() => doc.removeEventListener("pointerdown", resume, true));
   }
 
   onCleanup(() => {
