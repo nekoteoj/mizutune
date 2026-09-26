@@ -1,5 +1,5 @@
 # P07 GitHub Pages
-Status: on-going
+Status: finished
 Phase: 7
 Depends: P06 shell (not the iPhone check — this URL is how that check gets HTTPS)
 
@@ -15,10 +15,4 @@ Depends: P06 shell (not the iPhone check — this URL is how that check gets HTT
 ## Notes
 
 Project page, not `nekoteoj.github.io`. A service worker at `/sw.js` cannot control `/mizutune/`.
-
-CI uses `nix develop` so Node, Yarn classic, and emcc stay the flake. No second emscripten pin. No `vite-plugin-pwa`. No custom domain.
-
-P06's iPhone check uses this URL once it is live.
-
-`BASE_PATH` is CI-only. Local `yarn dev` / `yarn preview` stay at `/`.
-Repo → Settings → Pages → Source: GitHub Actions, then push `main`.
+CI uses `nix develop`. `BASE_PATH=/mizutune/` is CI-only. No `vite-plugin-pwa`. No custom domain.
