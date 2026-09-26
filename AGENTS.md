@@ -6,7 +6,7 @@ Read `plan/PLAN.md` before writing code. Cards: `plan/plan/` → `plan/on-going/
 
 ## Status
 
-P07 done (`https://nekoteoj.github.io/mizutune/`). **P06** in progress (iPhone Safari / add-to-home-screen still the v1 gate). Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
+P00–P07 done. Live: `https://nekoteoj.github.io/mizutune/`. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
 
 ## Locked (do not reopen)
 
