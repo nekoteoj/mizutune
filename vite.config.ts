@@ -25,19 +25,27 @@ function publicStamp() {
 }
 
 function serviceWorker(): Plugin {
+  let base = "/";
   return {
     name: "mizutune-sw",
     apply: "build",
+    configResolved(config) {
+      base = config.base;
+    },
     generateBundle(_options, bundle) {
-      const urls = ["/", ...PUBLIC_SHELL];
+      const prefix = base.endsWith("/") ? base.slice(0, -1) : base;
+      const at = (path: string) => `${prefix}${path}`;
+      const urls = [at("/"), ...PUBLIC_SHELL.map(at)];
       for (const item of Object.values(bundle)) {
-        if (item.type === "chunk" || item.fileName.endsWith(".css")) urls.push(`/${item.fileName}`);
+        if (item.type === "chunk" || item.fileName.endsWith(".css")) urls.push(at(`/${item.fileName}`));
       }
-      if (!urls.some((url) => url.startsWith("/assets/") && url.endsWith(".js"))) {
+      if (!urls.some((url) => url.endsWith(".js") && url.includes("/assets/"))) {
         this.error("service worker shell is missing the app script");
       }
       // ponytail: stamp stable names (wasm, worklet). URL list alone would keep a stale wasm.
       const cache = `mizutune-${publicStamp()}-${createHash("sha256").update(urls.join("\0")).digest("hex").slice(0, 8)}`;
+      const swPath = at("/sw.js");
+      const shellPath = at("/");
       this.emitFile({
         type: "asset",
         fileName: "sw.js",
@@ -61,7 +69,7 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin || url.pathname === "/sw.js") return;
+  if (url.origin !== self.location.origin || url.pathname === ${JSON.stringify(swPath)}) return;
   if (req.headers.has("range")) return;
   event.respondWith(load(req));
 });
@@ -76,7 +84,7 @@ async function load(req) {
     return res;
   } catch (err) {
     if (req.mode === "navigate") {
-      const shell = await cache.match("/");
+      const shell = await cache.match(${JSON.stringify(shellPath)});
       if (shell) return shell;
     }
     throw err;
@@ -89,6 +97,7 @@ async function load(req) {
 }
 
 export default defineConfig({
+  base: process.env.BASE_PATH || "/",
   plugins: [solid(), serviceWorker()],
   test: {
     environment: "node",

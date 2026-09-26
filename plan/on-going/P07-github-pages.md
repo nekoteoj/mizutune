@@ -1,5 +1,5 @@
 # P07 GitHub Pages
-Status: plan
+Status: on-going
 Phase: 7
 Depends: P06 shell (not the iPhone check — this URL is how that check gets HTTPS)
 
@@ -19,3 +19,6 @@ Project page, not `nekoteoj.github.io`. A service worker at `/sw.js` cannot cont
 CI uses `nix develop` so Node, Yarn classic, and emcc stay the flake. No second emscripten pin. No `vite-plugin-pwa`. No custom domain.
 
 P06's iPhone check uses this URL once it is live.
+
+`BASE_PATH` is CI-only. Local `yarn dev` / `yarn preview` stay at `/`.
+Repo → Settings → Pages → Source: GitHub Actions, then push `main`.

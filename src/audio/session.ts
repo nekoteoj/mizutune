@@ -5,8 +5,8 @@ export const HOP_SEC = 0.02;
 export const YIN_THRESHOLD = 0.1;
 export const RMS_GATE = 0.01;
 
-const WASM_URL = "/mizutune.wasm";
-const WORKLET_URL = "/pitch-worklet.js";
+const WASM_URL = `${import.meta.env.BASE_URL}mizutune.wasm`;
+const WORKLET_URL = `${import.meta.env.BASE_URL}pitch-worklet.js`;
 const SILENT = { hz: 0, clarity: 0, rms: 0 };
 
 export type PitchFrame = { hz: number; clarity: number; rms: number };
