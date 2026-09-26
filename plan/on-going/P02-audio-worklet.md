@@ -1,5 +1,5 @@
 # P02 Audio I/O
-Status: plan
+Status: on-going
 Phase: 2
 Depends: P01
 

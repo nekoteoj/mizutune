@@ -10,6 +10,7 @@ result-*
 # JS
 node_modules
 dist
+.vitest
 
 # DSP
 dsp/build/
