@@ -103,14 +103,24 @@ async function openMic() {
   }
 }
 
-export function debugStatus(frame: PitchFrame, mode: Mode | null) {
-  return `${frame.hz.toFixed(1)}Hz c${frame.clarity.toFixed(2)} r${frame.rms.toFixed(3)} ${mode ?? "…"}`;
+// ponytail: iOS labels a 44.1k mic as 48k and does not resample. That ratio is a semitone sharp. Drop the 44100 guess if a real 48k iPhone reads flat.
+export function yinSampleRate(ctxRate: number, micRate: number | undefined, apple: boolean) {
+  const mic = micRate && micRate > 0 ? micRate : 0;
+  if (apple && mic && Math.abs(mic - ctxRate) > 1) return mic;
+  if (apple && ctxRate === 48000) return 44100;
+  return ctxRate;
+}
+
+export function debugStatus(frame: PitchFrame, mode: Mode | null, rate = 0) {
+  const clock = rate ? ` ${(rate / 1000).toFixed(1)}k` : "";
+  return `${frame.hz.toFixed(1)}Hz c${frame.clarity.toFixed(2)} r${frame.rms.toFixed(3)} ${mode ?? "…"}${clock}`;
 }
 
 export function createAudioSession() {
   const [power, setPower] = createSignal(false);
   const [pitch, setPitch] = createSignal<PitchFrame>(SILENT);
   const [mode, setMode] = createSignal<Mode | null>(null);
+  const [rate, setRate] = createSignal(0);
   const [error, setError] = createSignal<string | null>(null);
 
   let graph: Graph | null = null;
@@ -130,6 +140,7 @@ export function createAudioSession() {
     setPower(false);
     setPitch(SILENT);
     setMode(null);
+    setRate(0);
   }
 
   async function onPcm(samples: Float32Array, sampleRate: number, gen: number) {
@@ -170,16 +181,21 @@ export function createAudioSession() {
       if (gen !== token) return abort(ctx, stream);
       await ctx.audioWorklet.addModule(WORKLET_URL);
       if (gen !== token) return abort(ctx, stream);
+      const micRate = stream.getAudioTracks()[0]?.getSettings?.().sampleRate;
+      const apple = /Apple/.test(navigator.vendor || "") || /iPhone|iPad|iPod/.test(navigator.userAgent || "");
+      const pitchRate = yinSampleRate(ctx.sampleRate, micRate, apple);
       node = new AudioWorkletNode(ctx, "mizutune-pitch", {
         processorOptions: {
           window: WINDOW,
           hopSec: HOP_SEC,
           threshold: YIN_THRESHOLD,
           rmsGate: RMS_GATE,
+          pitchRate,
           forcePcm: new URLSearchParams(location.search).has("pcm"),
           wasm: wasmBytes,
         },
       });
+      setRate(pitchRate);
       node.port.onmessage = (event: MessageEvent<WorkletMessage>) => {
         if (gen !== token) return;
         const data = event.data;
@@ -231,5 +247,5 @@ export function createAudioSession() {
     graph = null;
   });
 
-  return { power, pitch, mode, error, start, stop };
+  return { power, pitch, mode, rate, error, start, stop };
 }

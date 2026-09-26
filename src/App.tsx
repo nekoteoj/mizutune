@@ -22,7 +22,7 @@ export default function App() {
       cents={tuner().cents}
       flats={tuner().flats}
       midi={tuner().midi}
-      status={audio.error() ?? (debug && audio.power() ? debugStatus(audio.pitch(), audio.mode()) : "")}
+      status={audio.error() ?? (debug && audio.power() ? debugStatus(audio.pitch(), audio.mode(), audio.rate()) : "")}
       settings={settings.state}
       onPower={() => {
         if (audio.power()) audio.stop();
