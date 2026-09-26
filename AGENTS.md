@@ -6,7 +6,7 @@ Read `plan/PLAN.md` before writing code. Cards: `plan/plan/` → `plan/on-going/
 
 ## Status
 
-P00–P07 done. Live: `https://nekoteoj.github.io/mizutune/`. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
+P00–P08 done. Live: `https://nekoteoj.github.io/mizutune/`. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
 
 ## Locked (do not reopen)
 
@@ -63,4 +63,4 @@ Solid 2: components run once; live values in signals/stores; `createEffect(compu
 
 ## Phases
 
-P00 scaffold → P01 YIN → P02 worklet → P03 front → P04 flip/settings → P05 wire → P06 PWA+iOS → P07 GitHub Pages.
+P00 scaffold → P01 YIN → P02 worklet → P03 front → P04 flip/settings → P05 wire → P06 PWA+iOS → P07 GitHub Pages → P08 stable pitch.

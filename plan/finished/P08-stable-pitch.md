@@ -1,5 +1,5 @@
 # P08 Stable pitch
-Status: on-going
+Status: finished
 Phase: 8
 Depends: P05
 
@@ -52,18 +52,15 @@ Do in order. Stop after task 2 if a real guitar is already stable.
 - `yarn test:dsp` and Vitest still pass, including the hang test.
 - `?debug` still works. No other UI.
 
-## Progress
+## Notes
 
-Tasks 1–3 are in `317cf7e`. Task 4 not started — no guitar trace yet.
+Usable on a real guitar. Laptop and Android match a physical tuner. iOS can still swap a string between X and X♯ with cents near 0 — deferred, see `plan/backlog/ios-semitone-swap.md`.
 
-- Show gate is clarity 0.4 / rms 0.003. A note already up keeps tracking the same key down to clarity 0.3 / rms 0.001. WASM uses that floor so a thin-string tail is not zeroed.
-- Hang is 50 failed hops (~1 s). Cents freeze once the keep gate fails. In-tune is strict frames only. Power off clears immediately. A different note has to agree for 3 frames before it replaces the one on screen.
-- A low lock below 150 Hz climbs to τ/2, τ/3, or τ/4 when that divisor is still a valley. Analysis highpass is two poles at 180 Hz. A weak floor lock is dropped. A B/E-band valley with d' < 0.6 is kept even when it misses the 0.10 search — that reject was silencing phone plucks. Buried low E stays on E2.
-- `?debug` status is `329.6Hz c0.62 r0.004 wasm` (or `pcm` / `…`).
-- Mic constraints are exact `false`, one `OverconstrainedError` retry to `{ ideal: false }`.
-- Pitch uses the AudioContext clock on every phone. A semitone side-lobe must not swap the scale; that jump has to hold ~240 ms. iOS mic asks for voiceIsolation off.
-
-Still open: real guitar. Power on with `?debug` and pluck high E. Read the status line before touching C++.
+- Show gate clarity 0.4 / rms 0.003. Same note keeps tracking to clarity 0.3 / rms 0.001. Hang is 50 hops (~1 s). In-tune is a fresh frame only. Power off clears immediately.
+- `?debug` prints `hz`, clarity, rms, wasm/pcm, and the clock.
+- Mic constraints are exact `false`, one `OverconstrainedError` retry. iOS also asks for `voiceIsolation: false`.
+- Pitch uses the AudioContext clock. Do not invent a 44.1k or 45.3k rate.
+- Vitest covers the hang, the weak tail, and the semitone hold. `yarn test:dsp` still passes.
 
 ## Out of scope
 

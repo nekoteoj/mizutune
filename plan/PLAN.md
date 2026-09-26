@@ -240,6 +240,7 @@ Do in order. One phase in `on-going/` at a time.
 | 5 | `P05` wire | Debug readout gone; live meter + chromatic/fixed |
 | 6 | `P06` PWA | Manifest, SW, mobile fullscreen, polish |
 | 7 | `P07` Pages | GitHub Pages HTTPS at `/mizutune/` — iPhone check URL |
+| 8 | `P08` stable pitch | Hold, quieter gate, `?debug`. iOS semitone swap is backlog |
 
 Cards live in `plan/plan/` until picked.
 
