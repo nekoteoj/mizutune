@@ -1,5 +1,5 @@
 # P04 Flip + settings
-Status: plan
+Status: on-going
 Phase: 4
 Depends: P03
 
