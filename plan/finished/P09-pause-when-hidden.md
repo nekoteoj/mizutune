@@ -1,5 +1,5 @@
 # P09 Pause mic when hidden
-Status: on-going
+Status: finished
 Phase: 9
 Depends: P08
 
@@ -55,18 +55,13 @@ Do not rebuild the whole graph on every hide. Do not invent a third power state.
 
 ## Notes
 
-Code is in. Phone check is not.
+Confirmed in use.
 
 - Hide stops tracks and disconnects the source. `AudioContext` + worklet stay. `power()` stays true.
 - `mic()` goes false so the tuner drops the hang immediately (otherwise the last note sits for ~1 s).
-- Show calls `getUserMedia` again onto the live worklet and `resume()`. No second permission prompt expected.
+- Show calls `getUserMedia` again onto the live worklet and `resume()`. No second permission prompt.
 - Hide during `start()` bumps the token; the in-flight `abort()` stops the track. Power stays off.
-- `pagehide` / `pageshow` sit next to `visibilitychange` for iOS. If the phone freezes JS first, the orange dot can remain — do not add a wrapper.
-
-Manual still open:
-
-- Chrome desktop: tab switch kills the mic icon; come back, pluck works.
-- iPhone Safari and standalone: orange dot off after leaving; pluck works after return (tap if the context is suspended).
+- `pagehide` / `pageshow` sit next to `visibilitychange` for iOS.
 
 ## Out of scope
 
