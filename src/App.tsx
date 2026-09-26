@@ -8,10 +8,6 @@ const mockOctave = Number(params.get("oct") ?? "4") || 4;
 
 export default function App() {
   const audio = createAudioSession();
-  const debug = () => {
-    const p = audio.pitch();
-    return `${p.hz.toFixed(2)} Hz / ${p.clarity.toFixed(3)} / ${p.rms.toFixed(4)} rms`;
-  };
 
   return (
     <Pedal
@@ -19,7 +15,7 @@ export default function App() {
       note={mockNote}
       octave={mockOctave}
       cents={mockCents}
-      debug={debug()}
+      hz={audio.pitch().hz}
       status={audio.error() ?? audio.detail() ?? ""}
       onPower={() => {
         if (audio.power()) audio.stop();
