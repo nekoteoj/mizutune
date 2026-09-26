@@ -1,5 +1,5 @@
 # P04 Flip + settings
-Status: on-going
+Status: finished
 Phase: 4
 Depends: P03
 
@@ -13,4 +13,5 @@ Depends: P03
 
 ## Notes
 
-One boolean `face`. No router. Persist one JSON blob.
+One boolean `face` (not persisted). No router. One JSON blob `mizutune.settings`: `{ a4, mode, tuningId }`.
+Tuning ids: `standard`, `half-down`, `drop-d`, `gcea`.

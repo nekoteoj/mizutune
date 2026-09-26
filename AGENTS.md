@@ -6,7 +6,7 @@ Read `plan/PLAN.md` before writing code. Cards: `plan/plan/` → `plan/on-going/
 
 ## Status
 
-P03 done. Next: **P04** flip. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
+P04 done. Next: **P05** wire. Toolchain in `flake.nix` (Node 26, Yarn classic, Emscripten, CMake, Ninja).
 
 ## Locked (do not reopen)
 
