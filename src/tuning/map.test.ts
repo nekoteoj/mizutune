@@ -2,6 +2,7 @@ import { createRoot, createSignal, createStore, flush } from "solid-js";
 import { expect, test } from "vitest";
 import {
   CLARITY_MIN,
+  HOLD_HOPS,
   IDLE_TUNER,
   IN_TUNE_CENTS,
   RMS_GATE,
@@ -127,10 +128,12 @@ test("tuner store maps hz and tracks settings", () => {
 
   run.setPitch(frame(0, 0, 0));
   flush();
-  expect(run.view().live).toBe(false);
+  expect(run.view().live).toBe(true);
+  expect(run.view().note).toBe("A");
+  expect(run.view().inTune).toBe(false);
   run.setPitch(frame(hzOf(45, 440, 20)));
   flush();
-  expect(run.view().cents).toBeCloseTo(20, 3);
+  expect(run.view().cents).toBeCloseTo(20 * SMOOTH_ALPHA, 3);
 
   run.setPitch(frame(440));
   flush();
@@ -157,6 +160,50 @@ test("tuner store maps hz and tracks settings", () => {
 
   run.setPitch(frame(hzOf(69, 432, IN_TUNE_CENTS + 1), 0.2, 1));
   flush();
+  expect(run.view().live).toBe(true);
+  expect(run.view().note).toBe("D");
+  expect(run.view().inTune).toBe(false);
+  run.dispose();
+});
+
+test("one dropout holds E4; the 13th null clears and the next frame restarts", () => {
+  const run = createRoot((dispose) => {
+    const [pitch, setPitch] = createSignal<PitchFrame>({ hz: 0, clarity: 0, rms: 0 });
+    const view = createTuner({ pitch, settings: chromatic });
+    return { view, setPitch, dispose };
+  });
+  flush();
+
+  run.setPitch(frame(hzOf(64)));
+  flush();
+  expect(run.view().note).toBe("E");
+  expect(run.view().octave).toBe(4);
+  expect(run.view().inTune).toBe(true);
+
+  run.setPitch(frame(0, 0, 0));
+  flush();
+  expect(run.view().live).toBe(true);
+  expect(run.view().octave).toBe(4);
+  expect(run.view().cents).toBeCloseTo(0, 5);
+  expect(run.view().inTune).toBe(false);
+
+  run.setPitch(frame(hzOf(64, 440, 40)));
+  flush();
+  expect(run.view().cents).toBeCloseTo(40 * SMOOTH_ALPHA, 3);
+  expect(run.view().inTune).toBe(false);
+
+  for (let i = 0; i < HOLD_HOPS; i++) {
+    run.setPitch(frame(0, 0, 0));
+    flush();
+    expect(run.view().live).toBe(true);
+    expect(run.view().note).toBe("E");
+  }
+  run.setPitch(frame(0, 0, 0));
+  flush();
   expect(run.view()).toEqual(IDLE_TUNER);
+
+  run.setPitch(frame(hzOf(64, 440, 20)));
+  flush();
+  expect(run.view().cents).toBeCloseTo(20, 3);
   run.dispose();
 });

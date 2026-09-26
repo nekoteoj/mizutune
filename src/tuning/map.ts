@@ -2,11 +2,13 @@ import { createEffect, createSignal } from "solid-js";
 import { TUNINGS, type Settings } from "./settings";
 
 export const IN_TUNE_CENTS = 5;
-// ponytail: confident YIN dip (d' ≤ 0.2). Lower if a real guitar blanks.
-export const CLARITY_MIN = 0.8;
-// Matches the WASM rms gate in audio/session.ts.
-export const RMS_GATE = 0.01;
+// ponytail: show at d' ≤ 0.5. Sine tests clear 0.8; a mic pluck often does not.
+export const CLARITY_MIN = 0.5;
+// Shared with the WASM gate in audio/session.ts. 0.01 missed open B / high E.
+export const RMS_GATE = 0.003;
 export const SMOOTH_ALPHA = 0.25;
+// ponytail: hop count, not a timer. 12 frames ≈ 250 ms at the 20 ms hop.
+export const HOLD_HOPS = 12;
 
 const SHARP = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
 const FLAT = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"] as const;
@@ -110,27 +112,48 @@ export function stepSmooth(prev: Smooth | null, raw: RawReading | null, alpha = 
   return { key: raw.key, cents: prev.cents + alpha * (raw.cents - prev.cents) };
 }
 
+function reading(raw: RawReading, cents: number, fresh: boolean): TunerView {
+  return {
+    live: true,
+    inTune: fresh && Math.abs(cents) <= IN_TUNE_CENTS,
+    note: raw.note,
+    octave: raw.octave,
+    midi: raw.midi,
+    cents,
+    flats: raw.flats,
+  };
+}
+
 export function createTuner(source: { pitch: () => PitchFrame; settings: Settings }) {
   const [view, setView] = createSignal<TunerView>(IDLE_TUNER);
   let smooth: Smooth | null = null;
+  let shown: RawReading | null = null;
+  let hang = 0;
 
   createEffect(
     () => mapPitch(source.pitch(), source.settings),
     (raw) => {
-      smooth = stepSmooth(smooth, raw);
-      if (!raw || !smooth) {
-        setView(IDLE_TUNER);
+      if (raw) {
+        const next = stepSmooth(smooth, raw);
+        if (!next) {
+          setView(IDLE_TUNER);
+          return;
+        }
+        smooth = next;
+        shown = raw;
+        hang = HOLD_HOPS;
+        setView(reading(raw, next.cents, true));
         return;
       }
-      setView({
-        live: true,
-        inTune: Math.abs(smooth.cents) <= IN_TUNE_CENTS,
-        note: raw.note,
-        octave: raw.octave,
-        midi: raw.midi,
-        cents: smooth.cents,
-        flats: raw.flats,
-      });
+      if (hang > 0 && shown && smooth) {
+        hang -= 1;
+        setView(reading(shown, smooth.cents, false));
+        return;
+      }
+      smooth = null;
+      shown = null;
+      hang = 0;
+      setView(IDLE_TUNER);
     },
   );
 

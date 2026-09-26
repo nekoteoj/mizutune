@@ -1,9 +1,9 @@
 import { createSignal, onCleanup } from "solid-js";
+import { RMS_GATE } from "../tuning/map";
 
 export const WINDOW = 4096;
 export const HOP_SEC = 0.02;
 export const YIN_THRESHOLD = 0.1;
-export const RMS_GATE = 0.01;
 
 const WASM_URL = `${import.meta.env.BASE_URL}mizutune.wasm`;
 const WORKLET_URL = `${import.meta.env.BASE_URL}pitch-worklet.js`;
@@ -11,7 +11,7 @@ const SILENT = { hz: 0, clarity: 0, rms: 0 };
 
 export type PitchFrame = { hz: number; clarity: number; rms: number };
 
-type Mode = "wasm" | "pcm";
+export type Mode = "wasm" | "pcm";
 type WorkletMessage =
   | { type: "mode"; mode: Mode; error?: string }
   | { type: "pitch"; hz: number; clarity: number; rms: number }
@@ -78,9 +78,39 @@ async function loadPitchWasm(bytes: ArrayBuffer) {
   };
 }
 
+const MIC_OFF = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+};
+const MIC_IDEAL = {
+  echoCancellation: { ideal: false },
+  noiseSuppression: { ideal: false },
+  autoGainControl: { ideal: false },
+};
+
+function overconstrained(err: unknown) {
+  return err instanceof Error && err.name === "OverconstrainedError";
+}
+
+async function openMic() {
+  // ponytail: one retry. If iOS rejects exact false past the gesture, drop exact and keep ideal.
+  try {
+    return await navigator.mediaDevices.getUserMedia({ audio: MIC_OFF });
+  } catch (err) {
+    if (!overconstrained(err)) throw err;
+    return navigator.mediaDevices.getUserMedia({ audio: MIC_IDEAL });
+  }
+}
+
+export function debugStatus(frame: PitchFrame, mode: Mode | null) {
+  return `${frame.hz.toFixed(1)}Hz c${frame.clarity.toFixed(2)} r${frame.rms.toFixed(3)} ${mode ?? "…"}`;
+}
+
 export function createAudioSession() {
   const [power, setPower] = createSignal(false);
   const [pitch, setPitch] = createSignal<PitchFrame>(SILENT);
+  const [mode, setMode] = createSignal<Mode | null>(null);
   const [error, setError] = createSignal<string | null>(null);
 
   let graph: Graph | null = null;
@@ -99,6 +129,7 @@ export function createAudioSession() {
     analyzing = false;
     setPower(false);
     setPitch(SILENT);
+    setMode(null);
   }
 
   async function onPcm(samples: Float32Array, sampleRate: number, gen: number) {
@@ -133,14 +164,7 @@ export function createAudioSession() {
     let node: AudioWorkletNode | null = null;
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error("microphone unavailable");
-      // ponytail: ideal, not exact. exact false is OverconstrainedError on iOS; a retry is past the gesture.
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: { ideal: false },
-          noiseSuppression: { ideal: false },
-          autoGainControl: { ideal: false },
-        },
-      });
+      stream = await openMic();
       if (gen !== token) return abort(ctx, stream);
       wasmBytes = await wasmReady;
       if (gen !== token) return abort(ctx, stream);
@@ -159,7 +183,10 @@ export function createAudioSession() {
       node.port.onmessage = (event: MessageEvent<WorkletMessage>) => {
         if (gen !== token) return;
         const data = event.data;
-        if (data.type === "mode") return;
+        if (data.type === "mode") {
+          setMode(data.mode);
+          return;
+        }
         if (data.type === "pitch") {
           setPitch({ hz: data.hz, clarity: data.clarity, rms: data.rms });
           return;
@@ -204,5 +231,5 @@ export function createAudioSession() {
     graph = null;
   });
 
-  return { power, pitch, error, start, stop };
+  return { power, pitch, mode, error, start, stop };
 }

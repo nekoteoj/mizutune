@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { createAudioSession } from "./audio/session";
+import { createAudioSession, debugStatus } from "./audio/session";
 import { createTuner } from "./tuning/map";
 import { createSettings } from "./tuning/settings";
 import { Pedal } from "./ui/Pedal";
@@ -9,6 +9,7 @@ export default function App() {
   const settings = createSettings();
   const tuner = createTuner({ pitch: audio.pitch, settings: settings.state });
   const [face, setFace] = createSignal(false);
+  const debug = new URLSearchParams(globalThis.location?.search ?? "").has("debug");
 
   return (
     <Pedal
@@ -21,7 +22,7 @@ export default function App() {
       cents={tuner().cents}
       flats={tuner().flats}
       midi={tuner().midi}
-      status={audio.error() ?? ""}
+      status={audio.error() ?? (debug && audio.power() ? debugStatus(audio.pitch(), audio.mode()) : "")}
       settings={settings.state}
       onPower={() => {
         if (audio.power()) audio.stop();
