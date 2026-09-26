@@ -102,6 +102,32 @@ int main() {
   expect_hz("jump 110", a, 110.0, 1.0);
   expect_hz("jump 196", b, 196.0, 1.0);
 
+  // Far mic: weak high string plus low-frequency energy. Must not fall to E2.
+  const double e4 = hz_of(64, 0);
+  const double b3 = hz_of(59, 0);
+  const double e2 = hz_of(40, 0);
+  std::vector<float> rumble(k_n, 0.f);
+  add_sine(rumble, e4, 0.04, 0.2);
+  add_sine(rumble, 78.0, 0.03, 0.5);
+  expect_hz("E4 under rumble", rumble, e4, 50.0);
+
+  std::vector<float> both(k_n, 0.f);
+  add_sine(both, e4, 0.05, 0.2);
+  add_sine(both, e2, 0.04, 0.4);
+  expect_hz("E4 over E2", both, e4, 50.0);
+
+  std::vector<float> b_rumble(k_n, 0.f);
+  add_sine(b_rumble, b3, 0.04, 0.3);
+  add_sine(b_rumble, 70.0, 0.03, 0.8);
+  expect_hz("B3 under rumble", b_rumble, b3, 60.0);
+
+  // Climb must not octave-up a real low E whose harmonic is louder than the fundamental.
+  std::vector<float> buried(k_n, 0.f);
+  add_sine(buried, e2, 0.05, 0.2);
+  add_sine(buried, e2 * 2, 0.25, 0.4);
+  add_sine(buried, e2 * 3, 0.15, 0.2);
+  expect_hz("E2 buried fundamental", buried, e2, 2.0);
+
   if (g_fails) {
     std::printf("%d failed\n", g_fails);
     return 1;

@@ -9,6 +9,7 @@ import {
   RMS_GATE,
   RMS_SHOW,
   SMOOTH_ALPHA,
+  SWITCH_FRAMES,
   createTuner,
   mapPitch,
   stepSmooth,
@@ -125,8 +126,10 @@ test("tuner store maps hz and tracks settings", () => {
   expect(run.view().cents).toBeCloseTo(40 * SMOOTH_ALPHA, 3);
   expect(run.view().inTune).toBe(false);
 
-  run.setPitch(frame(hzOf(45)));
-  flush();
+  for (let i = 0; i < SWITCH_FRAMES; i++) {
+    run.setPitch(frame(hzOf(45)));
+    flush();
+  }
   expect(run.view().note).toBe("A");
   expect(run.view().cents).toBeCloseTo(0, 5);
 
@@ -139,9 +142,12 @@ test("tuner store maps hz and tracks settings", () => {
   flush();
   expect(run.view().cents).toBeCloseTo(20 * SMOOTH_ALPHA, 3);
 
-  run.setPitch(frame(440));
-  flush();
+  for (let i = 0; i < SWITCH_FRAMES; i++) {
+    run.setPitch(frame(440));
+    flush();
+  }
   expect(run.view().note).toBe("A");
+  expect(run.view().octave).toBe(4);
   expect(run.view().cents).toBeCloseTo(0, 4);
 
   run.setSettings((d) => {
@@ -156,8 +162,10 @@ test("tuner store maps hz and tracks settings", () => {
     d.mode = "guitar";
     d.tuningId = "drop-d";
   });
-  run.setPitch(frame(hzOf(38, 432)));
-  flush();
+  for (let i = 0; i < SWITCH_FRAMES; i++) {
+    run.setPitch(frame(hzOf(38, 432)));
+    flush();
+  }
   expect(run.view().note).toBe("D");
   expect(run.view().octave).toBe(2);
   expect(run.view().inTune).toBe(true);
@@ -193,6 +201,37 @@ test("a weak same note keeps tracking; a weak other note does not steal", () => 
   flush();
   expect(run.view().note).toBe("E");
   expect(run.view().octave).toBe(4);
+  run.dispose();
+});
+
+test("one low frame does not replace E4; three agreeing frames do", () => {
+  const run = createRoot((dispose) => {
+    const [pitch, setPitch] = createSignal<PitchFrame>({ hz: 0, clarity: 0, rms: 0 });
+    const view = createTuner({ pitch, settings: chromatic });
+    return { view, setPitch, dispose };
+  });
+  flush();
+
+  run.setPitch(frame(hzOf(64)));
+  flush();
+  const held = run.view().cents;
+
+  run.setPitch(frame(hzOf(41)));
+  flush();
+  expect(run.view().note).toBe("E");
+  expect(run.view().octave).toBe(4);
+  expect(run.view().cents).toBeCloseTo(held, 5);
+
+  run.setPitch(frame(hzOf(37)));
+  flush();
+  expect(run.view().octave).toBe(4);
+
+  for (let i = 0; i < SWITCH_FRAMES; i++) {
+    run.setPitch(frame(hzOf(40)));
+    flush();
+  }
+  expect(run.view().note).toBe("E");
+  expect(run.view().octave).toBe(2);
   run.dispose();
 });
 

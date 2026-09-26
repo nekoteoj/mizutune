@@ -11,6 +11,8 @@ export const RMS_GATE = 0.001;
 export const SMOOTH_ALPHA = 0.25;
 // ponytail: hop count, not a timer. 50 frames ≈ 1 s at the 20 ms hop.
 export const HOLD_HOPS = 50;
+// One rumble frame must not replace the note and then hang for a second.
+export const SWITCH_FRAMES = 3;
 
 const SHARP = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
 const FLAT = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"] as const;
@@ -137,6 +139,8 @@ export function createTuner(source: {
   let smooth: Smooth | null = null;
   let shown: RawReading | null = null;
   let hang = 0;
+  let agreeKey = "";
+  let agreeN = 0;
 
   createEffect(
     () => {
@@ -152,10 +156,27 @@ export function createTuner(source: {
         smooth = null;
         shown = null;
         hang = 0;
+        agreeKey = "";
+        agreeN = 0;
         setView(IDLE_TUNER);
         return;
       }
-      const raw = strict ?? (shown && weak?.key === shown.key ? weak : null);
+      let raw = strict ?? (shown && weak?.key === shown.key ? weak : null);
+      if (strict && shown && strict.key !== shown.key) {
+        if (strict.key === agreeKey) agreeN += 1;
+        else {
+          agreeKey = strict.key;
+          agreeN = 1;
+        }
+        if (agreeN < SWITCH_FRAMES) raw = null;
+        else {
+          agreeKey = "";
+          agreeN = 0;
+        }
+      } else {
+        agreeKey = "";
+        agreeN = 0;
+      }
       if (raw) {
         const next = stepSmooth(smooth, raw);
         if (!next) {

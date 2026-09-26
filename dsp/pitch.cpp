@@ -8,6 +8,10 @@ namespace {
 constexpr float k_f_min = 70.f;
 constexpr float k_f_max = 1400.f;
 constexpr float k_hp_hz = 60.f;
+// Rumble hides d'(τ) above the search threshold while d'(4τ) looks perfect.
+// Climb only from a low lock, and only to a divisor that is still a valley.
+constexpr float k_climb_hz = 150.f;
+constexpr double k_climb = 0.45;
 // ponytail: static scratch, not re-entrant. Cap 8192; keep the newest samples past that.
 constexpr int k_max_n = 8192;
 
@@ -108,6 +112,27 @@ extern "C" PitchResult pitch_yin(
     int t2 = tau * 2;
     while (t2 + 1 <= tau_max && g_d[t2 + 1] < g_d[t2]) ++t2;
     if (g_d[t2] + 0.02 < g_d[tau]) tau = t2;
+  }
+
+  // E4 + a little 70–90 Hz energy otherwise reports E2/F2/C#2. A real low E
+  // has no valley at τ/2, so this does not octave-up the wound strings.
+  if (tau > tau_min && sample_rate / (float)tau < k_climb_hz) {
+    int climbed = tau;
+    for (int div = 2; div <= 4 && tau / div >= tau_min; ++div) {
+      const int origin = tau / div;
+      const int slack = origin / 8 + 2;
+      int lo = origin - slack;
+      int hi = origin + slack;
+      if (lo < tau_min) lo = tau_min;
+      if (hi > tau_max) hi = tau_max;
+      int t = lo;
+      for (int i = lo + 1; i <= hi; ++i)
+        if (g_d[i] < g_d[t]) t = i;
+      if (t <= tau_min || t >= tau_max) continue;
+      if (g_d[t] > g_d[t - 1] || g_d[t] > g_d[t + 1]) continue;
+      if (g_d[t] < k_climb && t < climbed) climbed = t;
+    }
+    tau = climbed;
   }
 
   double tau_f = tau;
