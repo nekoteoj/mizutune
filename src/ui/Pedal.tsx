@@ -1,4 +1,6 @@
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
+import type { Settings } from "../tuning/settings";
+import { tuningsFor } from "../tuning/settings";
 import "./pedal.css";
 
 const NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
@@ -21,13 +23,19 @@ function nameOf(midi: number) {
 
 export function Pedal(props: {
   power: boolean;
+  face: boolean;
   note: string;
   octave: number;
   cents: number;
   hz: number;
   status: string;
+  settings: Settings;
   onPower: () => void;
   onSetup: () => void;
+  onBack: () => void;
+  onA4: (hz: number) => void;
+  onMode: (mode: string) => void;
+  onTuning: (id: string) => void;
 }) {
   const neighbors = () => {
     const m = midiOf(props.note, props.octave);
@@ -44,53 +52,119 @@ export function Pedal(props: {
 
   return (
     <div class="stage">
-      <div class={["pedal", { on: props.power }]}>
-        <span class="screw tl" />
-        <span class="screw tr" />
-        <span class="screw bl" />
-        <span class="screw br" />
-
-        <div class={["window", { on: props.power }]} style={`--cents: ${props.cents}`}>
-          <div class="card">
-            <div class="meter" aria-hidden="true">
-              <div class="scale">
-                <For each={neighbors()} keyed={(n) => n.midi}>
-                  {(n) => (
-                    <span class="mark" style={`left: calc(${n().at} * var(--px))`}>
-                      {n().label}
-                    </span>
-                  )}
-                </For>
+      <div class="flip">
+        <div class={["rotor", { back: props.face }]}>
+          <div class={["pedal", "front", { on: props.power }]} inert={props.face}>
+            <Screws />
+            <div class={["window", { on: props.power }]} style={`--cents: ${props.cents}`}>
+              <div class="card">
+                <div class="meter" aria-hidden="true">
+                  <div class="scale">
+                    <For each={neighbors()} keyed={(n) => n.midi}>
+                      {(n) => (
+                        <span class="mark" style={`left: calc(${n().at} * var(--px))`}>
+                          {n().label}
+                        </span>
+                      )}
+                    </For>
+                  </div>
+                  <div class="needle" />
+                </div>
+                <div class="figures" aria-live="polite">
+                  <span class="now">
+                    {props.note}
+                    {props.octave}
+                  </span>
+                  <span class="cents">{centsText()}</span>
+                  <span class="hz">{props.hz.toFixed(2)} Hz</span>
+                </div>
               </div>
-              <div class="needle" />
             </div>
-            <div class="figures" aria-live="polite">
-              <span class="now">
-                {props.note}
-                {props.octave}
-              </span>
-              <span class="cents">{centsText()}</span>
-              <span class="hz">{props.hz.toFixed(2)} Hz</span>
+            <p class="wordmark">MIZUTUNE</p>
+            <div class="switches">
+              <div class="switch-col">
+                <span class={["led", { on: props.power }]} />
+                <Footswitch label="Power" pressed={props.power} onClick={() => props.onPower()} />
+              </div>
+              <div class="switch-col">
+                <span class="led spacer" />
+                <Footswitch label="Setup" onClick={() => props.onSetup()} />
+              </div>
             </div>
+            <p class="status">{props.status}</p>
+          </div>
+
+          <div class="pedal rear" inert={!props.face}>
+            <Screws />
+            <div class="settings">
+              <label class="field">
+                A4
+                <input
+                  type="number"
+                  min="430"
+                  max="450"
+                  step="1"
+                  value={props.settings.a4}
+                  onInput={(e) => {
+                    const n = Number(e.currentTarget.value);
+                    if (n >= 430 && n <= 450) props.onA4(n);
+                  }}
+                  onChange={(e) => props.onA4(Number(e.currentTarget.value))}
+                />
+              </label>
+              <label class="field">
+                Mode
+                <select onChange={(e) => props.onMode(e.currentTarget.value)}>
+                  <option value="chromatic" selected={props.settings.mode === "chromatic"}>
+                    Chromatic
+                  </option>
+                  <option value="guitar" selected={props.settings.mode === "guitar"}>
+                    Guitar
+                  </option>
+                  <option value="ukulele" selected={props.settings.mode === "ukulele"}>
+                    Ukulele
+                  </option>
+                </select>
+              </label>
+              <label class="field">
+                Tuning
+                <select
+                  disabled={props.settings.mode === "chromatic"}
+                  onChange={(e) => props.onTuning(e.currentTarget.value)}
+                >
+                  <Show when={props.settings.mode === "chromatic"}>
+                    <option value="">—</option>
+                  </Show>
+                  <For each={tuningsFor(props.settings.mode)}>
+                    {(t) => (
+                      <option value={t.id} selected={t.id === props.settings.tuningId}>
+                        {t.label}
+                      </option>
+                    )}
+                  </For>
+                </select>
+              </label>
+            </div>
+            <p class="wordmark">MIZUTUNE</p>
+            <div class="switches end">
+              <Footswitch label="Back" onClick={() => props.onBack()} />
+            </div>
+            <p class="status" />
           </div>
         </div>
-
-        <p class="wordmark">MIZUTUNE</p>
-
-        <div class="switches">
-          <div class="switch-col">
-            <span class={["led", { on: props.power }]} />
-            <Footswitch label="Power" pressed={props.power} onClick={() => props.onPower()} />
-          </div>
-          <div class="switch-col">
-            <span class="led spacer" />
-            <Footswitch label="Setup" onClick={() => props.onSetup()} />
-          </div>
-        </div>
-
-        <p class="status">{props.status}</p>
       </div>
     </div>
+  );
+}
+
+function Screws() {
+  return (
+    <>
+      <span class="screw tl" />
+      <span class="screw tr" />
+      <span class="screw bl" />
+      <span class="screw br" />
+    </>
   );
 }
 
