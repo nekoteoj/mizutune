@@ -103,11 +103,11 @@ async function openMic() {
   }
 }
 
-// ponytail: iOS labels a 44.1k mic as 48k and does not resample. That ratio is a semitone sharp. Drop the 44100 guess if a real 48k iPhone reads flat.
-export function yinSampleRate(ctxRate: number, micRate: number | undefined, apple: boolean) {
-  const mic = micRate && micRate > 0 ? micRate : 0;
-  if (apple && mic && Math.abs(mic - ctxRate) > 1) return mic;
-  if (apple && ctxRate === 48000) return 44100;
+// ponytail: labeled 48k on this iPhone is one semitone sharp; 44100 is then a quarter-tone flat. 48000/2^(1/12) lands on the tuner. Remove if another iPhone reads a semitone flat.
+const IOS_48K = 48000 / 2 ** (1 / 12);
+
+export function yinSampleRate(ctxRate: number, apple: boolean) {
+  if (apple && ctxRate === 48000) return IOS_48K;
   return ctxRate;
 }
 
@@ -181,9 +181,8 @@ export function createAudioSession() {
       if (gen !== token) return abort(ctx, stream);
       await ctx.audioWorklet.addModule(WORKLET_URL);
       if (gen !== token) return abort(ctx, stream);
-      const micRate = stream.getAudioTracks()[0]?.getSettings?.().sampleRate;
       const apple = /Apple/.test(navigator.vendor || "") || /iPhone|iPad|iPod/.test(navigator.userAgent || "");
-      const pitchRate = yinSampleRate(ctx.sampleRate, micRate, apple);
+      const pitchRate = yinSampleRate(ctx.sampleRate, apple);
       node = new AudioWorkletNode(ctx, "mizutune-pitch", {
         processorOptions: {
           window: WINDOW,
