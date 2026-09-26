@@ -1,5 +1,5 @@
 # P05 Wire tuner
-Status: on-going
+Status: finished
 Phase: 5
 Depends: P02, P03, P04
 
@@ -15,3 +15,4 @@ Depends: P02, P03, P04
 ## Notes
 
 All mapping in TS. DSP still only returns Hz.
+In-tune is ±5¢ and clarity ≥ 0.8 and rms ≥ 0.01. One-pole α = 0.25, reset on note change.
