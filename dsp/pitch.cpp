@@ -13,6 +13,11 @@ constexpr float k_hp_hz = 180.f;
 // Climb only from a low lock, and only to a divisor that is still a valley.
 constexpr float k_climb_hz = 150.f;
 constexpr double k_climb = 0.45;
+// Phone B/E dips are often 0.15–0.55, so the 0.10 search skips them and the
+// floor reject then returns silence. 0.60 matches the meter show gate.
+constexpr double k_show = 0.6;
+constexpr float k_high_hz = 190.f;
+constexpr float k_high_top = 700.f;
 // ponytail: static scratch, not re-entrant. Cap 8192; keep the newest samples past that.
 constexpr int k_max_n = 8192;
 
@@ -140,9 +145,26 @@ extern "C" PitchResult pitch_yin(
     }
     tau = climbed;
   }
-  // No dip under the threshold, and no high-string valley to climb to.
-  // That global min sits on the 70 Hz floor and chromatic-rounds to C#2.
-  if (tau == tau_low && g_d[tau] >= yin_threshold) return gated(rms);
+  // 0.10 missed the string, or we landed on a low lock. Take the deepest
+  // valley in the B/E band if the meter would show it. Do not steal a
+  // confident low E (its dip is near 0; a noise valley is not).
+  const bool missed = tau == tau_low && g_d[tau] >= yin_threshold;
+  const bool low = tau > 0 && sample_rate / (float)tau < k_climb_hz;
+  if (missed || low) {
+    int lo = (int)(sample_rate / k_high_top);
+    int hi = (int)(sample_rate / k_high_hz);
+    if (lo < tau_min + 1) lo = tau_min + 1;
+    if (hi > tau_max - 1) hi = tau_max - 1;
+    int alt = -1;
+    for (int t = lo; t <= hi; ++t) {
+      if (g_d[t] > g_d[t - 1] || g_d[t] > g_d[t + 1] || g_d[t] >= k_show) continue;
+      if (alt < 0 || g_d[t] < g_d[alt]) alt = t;
+    }
+    if (alt > 0 && (missed || g_d[alt] + 0.05 < g_d[tau])) tau = alt;
+  }
+  // Still a weak floor lock: C#2. A high-band dip under k_show is kept.
+  if (tau > 0 && sample_rate / (float)tau < k_climb_hz && g_d[tau] >= yin_threshold) return gated(rms);
+  if (tau <= 0 || g_d[tau] >= k_show) return gated(rms);
 
   double tau_f = tau;
   if (tau > tau_min && tau < tau_max) {

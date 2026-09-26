@@ -133,6 +133,24 @@ int main() {
   add_sine(buried, e2 * 3, 0.15, 0.2);
   expect_hz("E2 buried fundamental", buried, e2, 2.0);
 
+  // A noisy pluck whose dip is above the 0.10 search threshold must still
+  // come back as the high string, not silence.
+  auto pluck = [](std::vector<float>& buf, double hz, double amp, float noise, uint32_t seed) {
+    const double w = 2.0 * 3.14159265358979323846 * hz / k_sr;
+    for (int i = 0; i < k_n; ++i) {
+      const double env = std::exp(-i / (k_sr * 0.35));
+      buf[i] += (float)(amp * env * (std::sin(w * i) + 0.5 * std::sin(2 * w * i)));
+      seed = seed * 1664525u + 1013904223u;
+      buf[i] += (((seed >> 8) & 0xffff) / 65535.f * 2.f - 1.f) * noise;
+    }
+  };
+  std::vector<float> noisy_e(k_n, 0.f);
+  std::vector<float> noisy_b(k_n, 0.f);
+  pluck(noisy_e, e4, 0.08, 0.08f, 3);
+  pluck(noisy_b, b3, 0.08, 0.04f, 3);
+  expect_hz("noisy E4 pluck", noisy_e, e4, 30.0);
+  expect_hz("noisy B3 pluck", noisy_b, b3, 30.0);
+
   if (g_fails) {
     std::printf("%d failed\n", g_fails);
     return 1;

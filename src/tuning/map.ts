@@ -2,8 +2,8 @@ import { createEffect, createSignal } from "solid-js";
 import { TUNINGS, type Settings } from "./settings";
 
 export const IN_TUNE_CENTS = 5;
-// Acquire. A mic pluck is not a sine; 0.8 only passed the sine tests.
-export const CLARITY_MIN = 0.5;
+// Acquire. Phone B/E dips often land around 0.4–0.6 clarity. 0.8 was sine-only.
+export const CLARITY_MIN = 0.4;
 export const RMS_SHOW = 0.003;
 // Same note, already showing. Also the WASM floor so a thin-string tail is not zeroed.
 export const CLARITY_KEEP = 0.3;
